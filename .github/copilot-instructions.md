@@ -21,7 +21,7 @@ There are no tests or linters (GUI/ROS code); verify by building and running the
 - `examples/*.cpp` are built as executables and installed to `lib/ifc_tools`; register new ones in `CMakeLists.txt`.
 - `ImageReceiver` (an `rclcpp::Node`): subscribes via `image_transport::create_subscription(*this, topic, cb, transport, rclcpp::SensorDataQoS())` (the `rclcpp::Node*` overload is deprecated). Converts with `cv_bridge::toCvShare(msg, "bgr8")` and calls a mutex-protected `std::function<void(const rclcpp::Time&, const cv::Mat&)>` set with `setCallback`. The `cv::Mat` is only valid during the callback; copy it to keep it.
 - `DebugViewer(cv::Size, size_t rows, size_t cols)`: fixed-grid mosaic in one OpenCV window. `update(row, col, mat)` (zero-based) copies/letterboxes an image into a cell and counts a frame for that tile; `render(timestamp_us)` takes a monotonic `uint64_t` time in microseconds, recomputes each tile's FPS once per second, draws a green FPS HUD on a clone of the mosaic (the stored mosaic stays clean), then `imshow` + `pollKey`. Accepts 8-bit gray/BGR/BGRA only. Single-thread use (the callback thread).
-- Consumers take the viewer as `std::optional<std::reference_wrapper<DebugViewer>>` (no `optional<T&>` in C++20); `std::nullopt` disables debugging, so drawing helpers must return immediately in that case.
+- The horizon detector base currently stores an optional `DebugViewer`; its construction and use are not wired yet.
 
 ## Conventions
 - Brace-on-own-line (Allman) style, 4-space indent, `_`-prefixed private members (`_callback_mutex`), `#pragma once`.

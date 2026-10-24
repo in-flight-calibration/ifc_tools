@@ -9,8 +9,9 @@
 #include <cstdint>
 #include <cstddef>
 #include <cstdio>
-#include <vector>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace ifc_tools
 {
@@ -33,10 +34,28 @@ public:
         _cell_size = cv::Size(
             size.width / static_cast<int>(_cols),
             size.height / static_cast<int>(_rows));
-        _stats.resize(_rows * _cols);
+        _hud.resize(_rows * _cols);
+
+        for (size_t row = 0; row < _rows; ++row)
+        {
+            for (size_t col = 0; col < _cols; ++col)
+            {
+                Hud& hud = _hud[row * _cols + col];
+                const int cell_height = cell_rect(row, col).height;
+                hud.margin = std::max(2, cell_height / 100);
+                hud.font_scale = std::max(0.3, cell_height * fps_text_height_fraction / 22.0);
+                hud.thickness = std::max(1, static_cast<int>(std::round(hud.font_scale * 1.5)));
+
+                int baseline = 0;
+                const cv::Size text_size = cv::getTextSize(
+                    "0.0 FPS", cv::FONT_HERSHEY_SIMPLEX,
+                    hud.font_scale, hud.thickness, &baseline);
+                hud.text_origin_y = hud.margin + text_size.height;
+            }
+        }
     }
 
-    void update(size_t row, size_t col, const cv::Mat& mat)
+    void update(size_t row, size_t col, const cv::Mat& mat, std::string label = "")
     {
         if (row >= _rows || col >= _cols)
         {
@@ -52,7 +71,10 @@ public:
 
         cv::Mat cell = _mosaic(cell_rect(row, col));
         fit(image, cell);
-        ++_stats[row * _cols + col].frames;
+        
+        Hud& hud = _hud[row * _cols + col];
+        hud.label = label;
+        hud.frames++;
     }
 
     void render(uint64_t timestamp_us)
@@ -60,7 +82,7 @@ public:
         calculate_fps(timestamp_us);
 
         cv::Mat frame = _mosaic.clone();
-        draw_fps(frame);
+        draw_hud(frame);
 
         cv::imshow("DebugViewer", frame);
         cv::pollKey();
@@ -70,12 +92,17 @@ private:
     static constexpr double fps_text_height_fraction = 0.05;
     static constexpr uint64_t fps_window_us = 1000000;
 
-    struct Stats
+    struct Hud
     {
         uint64_t frames = 0;
         uint64_t window_start_us = 0;
         double fps = 0.0;
         bool started = false;
+        double font_scale = 0.0;
+        int thickness = 0;
+        int margin = 0;
+        int text_origin_y = 0;
+        std::string label;
     };
 
     // The last row/column absorbs the remainder pixels.
@@ -90,47 +117,55 @@ private:
 
     void calculate_fps(uint64_t timestamp_us)
     {
-        for (Stats& stats : _stats)
+        for (Hud& hud : _hud)
         {
-            if (!stats.started)
+            if (!hud.started)
             {
-                stats.started = true;
-                stats.window_start_us = timestamp_us;
+                hud.started = true;
+                hud.window_start_us = timestamp_us;
                 continue;
             }
 
-            const uint64_t elapsed_us = timestamp_us - stats.window_start_us;
+            const uint64_t elapsed_us = timestamp_us - hud.window_start_us;
 
             if (elapsed_us < fps_window_us)
             {
                 continue;
             }
 
-            stats.fps = stats.frames * 1e6 / static_cast<double>(elapsed_us);
-            stats.frames = 0;
-            stats.window_start_us = timestamp_us;
+            hud.fps = hud.frames * 1e6 / static_cast<double>(elapsed_us);
+            hud.frames = 0;
+            hud.window_start_us = timestamp_us;
         }
     }
 
-    void draw_fps(cv::Mat& frame) const
+    void draw_hud(cv::Mat& frame) const
     {
         for (size_t row = 0; row < _rows; ++row)
         {
             for (size_t col = 0; col < _cols; ++col)
             {
                 cv::Mat cell = frame(cell_rect(row, col));
+                const Hud& hud = _hud[row * _cols + col];
 
-                const double font_scale = std::max(0.3, cell.rows * fps_text_height_fraction / 22.0);
-                const int thickness = std::max(1, static_cast<int>(std::round(font_scale * 1.5)));
+                if (!hud.label.empty())
+                {
+                    cv::putText(
+                        cell, hud.label, cv::Point(hud.margin, hud.text_origin_y),
+                        cv::FONT_HERSHEY_SIMPLEX, hud.font_scale,
+                        cv::Scalar(0, 255, 0), hud.thickness, cv::LINE_AA);
+                }
+
                 char text[32];
-                std::snprintf(text, sizeof(text), "%.1f FPS", _stats[row * _cols + col].fps);
-                int baseline = 0;
-                const cv::Size text_size = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, font_scale, thickness, &baseline);
-                const int margin = std::max(2, cell.rows / 100);
-                const cv::Point origin(cell.cols - text_size.width - margin, margin + text_size.height);
+                std::snprintf(text, sizeof(text), "%.1f FPS", hud.fps);
+                const int text_width = cv::getTextSize(
+                    text, cv::FONT_HERSHEY_SIMPLEX,
+                    hud.font_scale, hud.thickness, nullptr).width;
+                const cv::Point origin(
+                    cell.cols - text_width - hud.margin, hud.text_origin_y);
                 cv::putText(
-                    cell, text, origin, cv::FONT_HERSHEY_SIMPLEX, font_scale,
-                    cv::Scalar(0, 255, 0), thickness, cv::LINE_AA);
+                    cell, text, origin, cv::FONT_HERSHEY_SIMPLEX, hud.font_scale,
+                    cv::Scalar(0, 255, 0), hud.thickness, cv::LINE_AA);
             }
         }
     }
@@ -195,7 +230,7 @@ private:
     size_t _cols;
     cv::Mat _mosaic;
     cv::Size _cell_size;
-    std::vector<Stats> _stats;
+    std::vector<Hud> _hud;
 };
 
 }
