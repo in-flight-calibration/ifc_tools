@@ -10,6 +10,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ifc_msgs REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
 find_package(rclcpp REQUIRED)
 find_package(image_transport REQUIRED)
@@ -25,6 +26,7 @@ target_include_directories(ifc_tools INTERFACE
 )
 
 target_link_libraries(ifc_tools INTERFACE
+    ifc_msgs::ifc_msgs__rosidl_typesupport_cpp
     ${OpenCV_LIBS}
     rclcpp::rclcpp
     image_transport::image_transport
@@ -50,6 +52,6 @@ install(
 )
 
 ament_export_targets(export_ifc_tools)
-ament_export_dependencies(OpenCV rclcpp image_transport cv_bridge sensor_msgs)
+ament_export_dependencies(ifc_msgs OpenCV rclcpp image_transport cv_bridge sensor_msgs)
 
 ament_package()
