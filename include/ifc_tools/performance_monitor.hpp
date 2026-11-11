@@ -25,7 +25,7 @@ public:
 
     void setTopic(const std::string& topic)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::scoped_lock<std::mutex> lock(_mutex);
 
         _publisher = create_publisher<ifc_msgs::msg::Performance>(topic, rclcpp::SensorDataQoS());
         _window_start = std::chrono::steady_clock::now();
@@ -34,13 +34,13 @@ public:
 
     void start()
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::scoped_lock<std::mutex> lock(_mutex);
         _start_time = std::chrono::steady_clock::now();
     }
 
     void stop()
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::scoped_lock<std::mutex> lock(_mutex);
 
         if (!_start_time)
         {
@@ -60,7 +60,7 @@ public:
 private:
     void publish()
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::scoped_lock<std::mutex> lock(_mutex);
 
         const auto now = std::chrono::steady_clock::now();
         const double elapsed = std::chrono::duration<double>(now - _window_start).count();

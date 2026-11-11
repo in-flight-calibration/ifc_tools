@@ -42,6 +42,16 @@ install(
     DESTINATION lib/${PROJECT_NAME}
 )
 
+if(BUILD_TESTING)
+    enable_testing()
+    add_executable(ifc_tools_ring_buffer test/test_ring_buffer.cpp)
+    target_include_directories(ifc_tools_ring_buffer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    add_test(NAME ifc_tools_ring_buffer COMMAND ifc_tools_ring_buffer)
+    add_executable(ifc_tools_interpolator test/test_interpolator.cpp)
+    target_include_directories(ifc_tools_interpolator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    add_test(NAME ifc_tools_interpolator COMMAND ifc_tools_interpolator)
+endif()
+
 install(
     TARGETS ifc_tools
     EXPORT export_ifc_tools

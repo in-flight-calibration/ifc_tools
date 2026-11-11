@@ -37,7 +37,7 @@ public:
 
     void setCallback(Callback callback)
     {
-        std::lock_guard<std::mutex> lock(_callback_mutex);
+        std::scoped_lock<std::mutex> lock(_callback_mutex);
 
         if (callback)
         {
@@ -66,7 +66,7 @@ private:
             return;
         }
 
-        std::lock_guard<std::mutex> lock(_callback_mutex);
+        std::scoped_lock<std::mutex> lock(_callback_mutex);
 
         if (!_callback)
         {
