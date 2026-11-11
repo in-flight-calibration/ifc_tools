@@ -2,6 +2,7 @@
 
 #include <cv_bridge/cv_bridge.hpp>
 #include <image_transport/image_transport.hpp>
+#include <image_transport/version.h>
 #include <opencv2/core/mat.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
@@ -26,13 +27,19 @@ public:
         const std::string& transport)
         : rclcpp::Node(node_name)
     {
+        auto callback = [this](const sensor_msgs::msg::Image::ConstSharedPtr& message)
+        {
+            receiveImage(message);
+        };
+
+#if IMAGE_TRANSPORT_VERSION_MAJOR > 6 || (IMAGE_TRANSPORT_VERSION_MAJOR == 6 && IMAGE_TRANSPORT_VERSION_MINOR >= 4)
         _subscriber = image_transport::create_subscription(
-            *this, topic,
-            [this](const sensor_msgs::msg::Image::ConstSharedPtr& message)
-            {
-                receiveImage(message);
-            },
-            transport, rclcpp::SensorDataQoS());
+            *this, topic, callback, transport, rclcpp::SensorDataQoS());
+#else
+        _subscriber = image_transport::create_subscription(
+            this, topic, callback, transport, rclcpp::SensorDataQoS().get_rmw_qos_profile());
+#endif
+
     }
 
     void setCallback(Callback callback)
