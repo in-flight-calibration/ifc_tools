@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ifc_tools/ring_buffer.hpp>
+#include <ifc_tools/processing/ring_buffer.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 

@@ -1,5 +1,5 @@
-#include <ifc_tools/debug_viewer.hpp>
-#include <ifc_tools/image_receiver.hpp>
+#include <ifc_tools/common/debug_viewer.hpp>
+#include <ifc_tools/receiver/image_receiver.hpp>
 
 #include <chrono>
 #include <cstdint>

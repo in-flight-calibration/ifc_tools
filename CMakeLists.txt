@@ -10,8 +10,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(ifc_msgs REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui)
+find_package(px4_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(cv_bridge REQUIRED)
@@ -26,8 +28,10 @@ target_include_directories(ifc_tools INTERFACE
 )
 
 target_link_libraries(ifc_tools INTERFACE
+    Eigen3::Eigen
     ifc_msgs::ifc_msgs__rosidl_typesupport_cpp
     ${OpenCV_LIBS}
+    px4_msgs::px4_msgs__rosidl_typesupport_cpp
     rclcpp::rclcpp
     image_transport::image_transport
     cv_bridge::cv_bridge
@@ -44,12 +48,15 @@ install(
 
 if(BUILD_TESTING)
     enable_testing()
-    add_executable(ifc_tools_ring_buffer test/test_ring_buffer.cpp)
+    add_executable(ifc_tools_ring_buffer test/processing/test_ring_buffer.cpp)
     target_include_directories(ifc_tools_ring_buffer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     add_test(NAME ifc_tools_ring_buffer COMMAND ifc_tools_ring_buffer)
-    add_executable(ifc_tools_interpolator test/test_interpolator.cpp)
+    add_executable(ifc_tools_interpolator test/processing/test_interpolator.cpp)
     target_include_directories(ifc_tools_interpolator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     add_test(NAME ifc_tools_interpolator COMMAND ifc_tools_interpolator)
+    add_executable(ifc_tools_kalman_filter_1d test/filter/test_kalman_filter_1d.cpp)
+    target_include_directories(ifc_tools_kalman_filter_1d PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    add_test(NAME ifc_tools_kalman_filter_1d COMMAND ifc_tools_kalman_filter_1d)
 endif()
 
 install(
@@ -62,6 +69,6 @@ install(
 )
 
 ament_export_targets(export_ifc_tools)
-ament_export_dependencies(ifc_msgs OpenCV rclcpp image_transport cv_bridge sensor_msgs)
+ament_export_dependencies(Eigen3 ifc_msgs OpenCV px4_msgs rclcpp image_transport cv_bridge sensor_msgs)
 
 ament_package()

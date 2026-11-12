@@ -1,4 +1,4 @@
-#include <ifc_tools/ring_buffer.hpp>
+#include <ifc_tools/processing/ring_buffer.hpp>
 
 #include <cstdio>
 #include <vector>

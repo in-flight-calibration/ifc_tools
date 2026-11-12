@@ -1,5 +1,5 @@
-#include <ifc_tools/interpolator.hpp>
-#include <ifc_tools/ring_buffer.hpp>
+#include <ifc_tools/processing/interpolator.hpp>
+#include <ifc_tools/processing/ring_buffer.hpp>
 
 #include <algorithm>
 #include <cmath>
