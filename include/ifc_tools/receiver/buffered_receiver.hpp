@@ -1,10 +1,10 @@
 #pragma once
 
+#include <ifc_tools/processing/interpolator.hpp>
 #include <ifc_tools/processing/ring_buffer.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <atomic>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -48,6 +48,28 @@ public:
     {
         std::scoped_lock<std::mutex> lock(_buffer_mtx);
         return _buffer.toVector();
+    }
+
+    std::optional<T> interpolateAndPrune(decltype(T::timestamp) timestamp, const InterpolationMethod<T>& method)
+    {
+        std::scoped_lock<std::mutex> lock(_buffer_mtx);
+
+        if (_buffer.empty())
+        {
+            return std::nullopt;
+        }
+
+        const std::optional<T> sample = Interpolator<RingBuffer<T>>(_buffer).interpolate(timestamp, method);
+
+        if (sample)
+        {
+            while (_buffer.size() > 1 && _buffer[1].timestamp <= timestamp)
+            {
+                _buffer.popFront();
+            }
+        }
+
+        return sample;
     }
 
 private:
