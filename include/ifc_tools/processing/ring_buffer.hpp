@@ -67,19 +67,32 @@ public:
             throw std::invalid_argument("RingBuffer capacity must be positive");
         }
 
-        _data.reserve(capacity);
+        _data.resize(capacity);
     }
 
     void push(T value)
     {
-        if (_data.size() < _capacity)
+        if (_size < _capacity)
         {
-            _data.push_back(std::move(value));
+            _data[(_head + _size) % _capacity] = std::move(value);
+            ++_size;
             return;
         }
 
         _data[_head] = std::move(value);
         _head = (_head + 1) % _capacity;
+    }
+
+    void popFront()
+    {
+        if (_size == 0)
+        {
+            throw std::out_of_range("RingBuffer is empty");
+        }
+
+        _data[_head] = T();
+        _head = (_head + 1) % _capacity;
+        --_size;
     }
 
     const T& operator[](std::size_t index) const
@@ -94,23 +107,23 @@ public:
 
     const T& back() const
     {
-        return (*this)[_data.size() - 1];
+        return (*this)[_size - 1];
     }
 
     std::size_t size() const
     {
-        return _data.size();
+        return _size;
     }
 
     bool empty() const
     {
-        return _data.empty();
+        return _size == 0;
     }
 
     void clear()
     {
-        _data.clear();
         _head = 0;
+        _size = 0;
     }
 
     RingBufferConstIterator<T> begin() const
@@ -120,7 +133,7 @@ public:
 
     RingBufferConstIterator<T> end() const
     {
-        return RingBufferConstIterator<T>(this, _data.size());
+        return RingBufferConstIterator<T>(this, _size);
     }
 
     std::vector<T> toVector() const
@@ -132,6 +145,7 @@ private:
     std::vector<T> _data;
     std::size_t _capacity;
     std::size_t _head = 0;
+    std::size_t _size = 0;
 };
 
 }
