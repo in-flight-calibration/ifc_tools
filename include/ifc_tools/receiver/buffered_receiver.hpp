@@ -5,6 +5,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <cstddef>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -50,7 +51,7 @@ public:
         return _buffer.toVector();
     }
 
-    std::optional<T> interpolateAndPrune(decltype(T::timestamp) timestamp, const InterpolationMethod<T>& method)
+    std::optional<T> interpolateAndPrune(decltype(T::timestamp) timestamp, const InterpolationMethod<T>& method, std::size_t keep = 0)
     {
         std::scoped_lock<std::mutex> lock(_buffer_mtx);
 
@@ -63,7 +64,7 @@ public:
 
         if (sample)
         {
-            while (_buffer.size() > 1 && _buffer[1].timestamp <= timestamp)
+            while (_buffer.size() > keep + 1 && _buffer[keep + 1].timestamp <= timestamp)
             {
                 _buffer.popFront();
             }
