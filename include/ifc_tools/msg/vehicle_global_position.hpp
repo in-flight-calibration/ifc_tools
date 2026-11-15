@@ -5,9 +5,14 @@
 
 #include <px4_msgs/msg/vehicle_global_position.hpp>
 
+#include <Eigen/Dense>
+
+#include <cmath>
 #include <cstdint>
 #include <limits>
+#include <numbers>
 #include <optional>
+#include <utility>
 
 namespace ifc_tools
 {
@@ -49,10 +54,26 @@ public:
     VehicleGlobalPosition interpolate(const VehicleGlobalPosition& a, const VehicleGlobalPosition& b, float alpha) const override
     {
         const double t = static_cast<double>(alpha);
+        constexpr double to_rad = std::numbers::pi / 180.0;
+
+        const auto to_vector = [](double latitude, double longitude)
+        {
+            const double lat = latitude * to_rad;
+            const double lon = longitude * to_rad;
+            return Eigen::Vector3d(std::cos(lat) * std::cos(lon), std::cos(lat) * std::sin(lon), std::sin(lat));
+        };
+
+        const auto to_lat_lon = [](const Eigen::Vector3d& n)
+        {
+            return std::pair<double, double> {std::atan2(n.z(), std::hypot(n.x(), n.y())) / to_rad, std::atan2(n.y(), n.x()) / to_rad};
+        };
+
+        const Eigen::Vector3d n = ((1.0 - t) * to_vector(a.latitude, a.longitude) + t * to_vector(b.latitude, b.longitude)).normalized();
+        const auto [latitude, longitude] = to_lat_lon(n);
         return {
             a.timestamp,
-            a.latitude + t * (b.latitude - a.latitude),
-            a.longitude + t * (b.longitude - a.longitude),
+            latitude,
+            longitude,
             a.altitude_amsl + alpha * (b.altitude_amsl - a.altitude_amsl)};
     }
 };
