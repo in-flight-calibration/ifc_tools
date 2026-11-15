@@ -57,6 +57,10 @@ if(BUILD_TESTING)
     add_executable(ifc_tools_kalman_filter_1d test/filter/test_kalman_filter_1d.cpp)
     target_include_directories(ifc_tools_kalman_filter_1d PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
     add_test(NAME ifc_tools_kalman_filter_1d COMMAND ifc_tools_kalman_filter_1d)
+    add_executable(ifc_tools_terrain_grid test/processing/test_terrain_grid.cpp)
+    target_include_directories(ifc_tools_terrain_grid PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    target_link_libraries(ifc_tools_terrain_grid PRIVATE Eigen3::Eigen)
+    add_test(NAME ifc_tools_terrain_grid COMMAND ifc_tools_terrain_grid)
 endif()
 
 install(

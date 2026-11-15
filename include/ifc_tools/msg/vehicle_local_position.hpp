@@ -19,6 +19,9 @@ struct VehicleLocalPosition
     int64_t timestamp = 0;
     Eigen::Vector3d position = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
     Eigen::Vector3d velocity = Eigen::Vector3d::Constant(std::numeric_limits<double>::quiet_NaN());
+    double ref_lat = std::numeric_limits<double>::quiet_NaN();
+    double ref_lon = std::numeric_limits<double>::quiet_NaN();
+    float ref_alt = std::numeric_limits<float>::quiet_NaN();
 };
 
 using VehicleLocalPositionReceiver = BufferedReceiver<px4_msgs::msg::VehicleLocalPosition, VehicleLocalPosition>;
@@ -55,13 +58,37 @@ public:
             result.velocity.z() = message.vz;
         }
 
+        if (message.xy_global)
+        {
+            result.ref_lat = message.ref_lat;
+            result.ref_lon = message.ref_lon;
+        }
+
+        if (message.z_global)
+        {
+            result.ref_alt = message.ref_alt;
+        }
+
         return result;
     }
 
     VehicleLocalPosition interpolate(const VehicleLocalPosition& a, const VehicleLocalPosition& b, float alpha) const override
     {
         const double t = static_cast<double>(alpha);
-        return {a.timestamp, a.position + t * (b.position - a.position), a.velocity + t * (b.velocity - a.velocity)};
+
+        VehicleLocalPosition result;
+        result.timestamp = a.timestamp;
+        result.position = a.position + t * (b.position - a.position);
+        result.velocity = a.velocity + t * (b.velocity - a.velocity);
+
+        if (a.ref_lat == b.ref_lat && a.ref_lon == b.ref_lon && a.ref_alt == b.ref_alt)
+        {
+            result.ref_lat = a.ref_lat;
+            result.ref_lon = a.ref_lon;
+            result.ref_alt = a.ref_alt;
+        }
+
+        return result;
     }
 };
 
