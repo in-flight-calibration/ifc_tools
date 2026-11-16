@@ -64,6 +64,8 @@ int main()
 
     ok &= check(grid.x().size() == 21 && grid.y().size() == 11, "axis size from start:step:stop");
     ok &= check(grid.origin().ref_lat() == 52.0 && grid.origin().ref_alt() == 100.0f, "keeps the origin");
+    ok &= check(grid.matrix()(1, 2) == grid.z(-90.0, -30.0) && grid.toVector()[1 * 11 + 2] == static_cast<float>(grid.z(-90.0, -30.0)), "matrix rows along x and row-major toVector");
+    ok &= check(ifc_tools::TerrainGrid(grid.origin(), grid.x(), grid.y(), grid.toVector()).matrix() == grid.matrix(), "toVector round trip");
     ok &= check(near(grid.z(0.0, 0.0), 10.0) && near(grid.z(-100.0, -50.0), 10.0 + 10.0 - 10.0), "z at grid nodes");
     ok &= check(near(grid.z(13.0, -7.0), 10.0 - 1.3 - 1.4, 1e-5), "bilinear z between nodes");
     ok &= check(near(grid.z(100.0, 50.0), 10.0 - 10.0 + 10.0, 1e-5), "z on the far edge");
@@ -109,6 +111,7 @@ int main()
     ok &= check(throws([] { ifc_tools::TerrainOrigin(0.0, 181.0, 0.0f); }), "rejects a longitude outside [-180, 180]");
     ok &= check(throws([] { ifc_tools::TerrainOrigin(0.0, 0.0, std::nanf("")); }), "rejects a NaN altitude");
     ok &= check(throws([] { ifc_tools::TerrainGrid(ifc_tools::TerrainOrigin(0.0, 0.0, 0.0f), ifc_tools::TerrainAxis(0.0f, 10.0f, 10.0f), ifc_tools::TerrainAxis(0.0f, 10.0f, 10.0f), std::vector<float>(3, 0.0f)); }), "rejects z of the wrong size");
+    ok &= check(throws([] { ifc_tools::TerrainGrid(ifc_tools::TerrainOrigin(0.0, 0.0, 0.0f), ifc_tools::TerrainAxis(0.0f, 10.0f, 10.0f), ifc_tools::TerrainAxis(0.0f, 10.0f, 20.0f), Eigen::MatrixXd(3, 2)); }), "rejects a matrix of the wrong shape");
 
     return ok ? 0 : 1;
 }

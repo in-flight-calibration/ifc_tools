@@ -41,8 +41,11 @@ target_link_libraries(ifc_tools INTERFACE
 add_executable(mosaic examples/mosaic.cpp)
 target_link_libraries(mosaic PRIVATE ifc_tools)
 
+add_executable(terrain examples/terrain.cpp)
+target_link_libraries(terrain PRIVATE ifc_tools)
+
 install(
-    TARGETS mosaic
+    TARGETS mosaic terrain
     DESTINATION lib/${PROJECT_NAME}
 )
 

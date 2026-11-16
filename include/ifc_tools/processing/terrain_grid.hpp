@@ -10,6 +10,7 @@
 #include <limits>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 namespace ifc_tools
@@ -95,15 +96,17 @@ class TerrainGrid
 {
 public:
     TerrainGrid(const TerrainOrigin& origin, const TerrainAxis& x, const TerrainAxis& y, const std::vector<float>& z)
-        : _origin(origin), _x(x), _y(y)
+        : TerrainGrid(origin, x, y, toMatrix(x, y, z))
     {
-        if (z.size() != _x.size() * _y.size())
-        {
-            throw std::invalid_argument("TerrainGrid: z must have x.size() * y.size() values");
-        }
+    }
 
-        _z = Eigen::Map<const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
-            z.data(), static_cast<Eigen::Index>(_x.size()), static_cast<Eigen::Index>(_y.size())).cast<double>();
+    TerrainGrid(const TerrainOrigin& origin, const TerrainAxis& x, const TerrainAxis& y, Eigen::MatrixXd z)
+        : _origin(origin), _x(x), _y(y), _z(std::move(z))
+    {
+        if (_z.rows() != static_cast<Eigen::Index>(_x.size()) || _z.cols() != static_cast<Eigen::Index>(_y.size()))
+        {
+            throw std::invalid_argument("TerrainGrid: z must have x.size() rows and y.size() columns");
+        }
 
         for (const double value : _z.reshaped())
         {
@@ -128,6 +131,18 @@ public:
     const TerrainOrigin& origin() const
     {
         return _origin;
+    }
+
+    const Eigen::MatrixXd& matrix() const
+    {
+        return _z;
+    }
+
+    std::vector<float> toVector() const
+    {
+        std::vector<float> z(static_cast<std::size_t>(_z.size()));
+        Eigen::Map<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(z.data(), _z.rows(), _z.cols()) = _z.cast<float>();
+        return z;
     }
 
     double z(double x, double y) const
@@ -320,6 +335,17 @@ private:
     static Eigen::Index cell(double index, std::size_t size)
     {
         return std::clamp(static_cast<Eigen::Index>(std::floor(index)), Eigen::Index {0}, static_cast<Eigen::Index>(size) - 2);
+    }
+
+    static Eigen::MatrixXd toMatrix(const TerrainAxis& x, const TerrainAxis& y, const std::vector<float>& z)
+    {
+        if (z.size() != x.size() * y.size())
+        {
+            throw std::invalid_argument("TerrainGrid: z must have x.size() * y.size() values");
+        }
+
+        return Eigen::Map<const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
+            z.data(), static_cast<Eigen::Index>(x.size()), static_cast<Eigen::Index>(y.size())).cast<double>();
     }
 };
 
